@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Tide tweets stream</title>
+  <meta charset="utf-8">
+  <!-- Primary Meta Tags -->
+    <title>Tide tweets stream - a Server Send Events example with Tide</title>
+    <meta name="title" content="Tide tweets stream - a Server Send Events example with Tide">
+    <meta name="description" content="Tide tweets stream - a Server Send Events example in Rust using Tide ( @http_rs )">
+    <meta name="author" content="Javier Viola">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+
+   <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://tide-sse-tweets.labs.javierviola.com/">
+    <meta property="og:title" content="Tide sse tweets - a SSE example with Tide">
+    <meta property="og:description" content="Tide sse tweets - a SSE example with Tide">
+    <meta property="og:image" content="https://user-images.githubusercontent.com/363911/107263816-fa8d6400-6a20-11eb-8d2f-6ee13d3669d0.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://tide-sse-tweets.labs.javierviola.com/">
+    <meta property="twitter:title" content="Tide sse tweets - a SSE example with Tide">
+    <meta property="twitter:description" content="Tide sse tweets - a SSE example with Tide">
+    <meta property="twitter:image" content="https://user-images.githubusercontent.com/363911/107263816-fa8d6400-6a20-11eb-8d2f-6ee13d3669d0.png">
+
+    <link href='//fonts.googleapis.com/css?family=Raleway:400,300,600' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="/public/css/normalize.css">
+    <link rel="stylesheet" href="/public/css/skeleton.css">
+    <link rel="stylesheet" href="/public/css/custom.css">
+
+<style>
+html, body {
+    height: 100%;
+}
+
+div.container.wrapper {
+    display: table;
+    height: 100%;
+    width: 100%;
+}
+
+#footer {
+    /* Placeholder footer styles */
+    text-align: center;
+}
+
+div.container {
+    max-width: inherit;
+}
+section {
+    padding-top: 30px;
+}
+
+span.tide {
+color: #444;
+    padding: 5px;
+    font-size: 4.7rem;
+    border: 1px solid #DEA584;
+    border-radius: 5px;
+    background-color: #DEA584;
+    box-shadow: 0 0 5px rgba(0,0,0,.1), 0 3px 6px rgba(0,0,0,.05);
+}
+
+span.inspired {
+    font-size: 1.5rem;
+}
+
+pre.explain {
+    white-space: pre-wrap;
+    font-size: 1.7rem;
+    padding: 15px 0;
+}
+
+code.explain {
+    white-space: pre-wrap;
+}
+
+div.help {
+    color: #444;
+    padding: 20px;
+    margin-bottom: 20px;
+    font-size: 2rem;
+    border: 1px solid #DEA584;
+    border-radius: 5px;
+    background-color: #DEA584;
+    box-shadow: 0 0 5px rgba(0,0,0,.1), 0 3px 6px rgba(0,0,0,.05);
+}
+
+div.buttons {
+    margin-top: 50px;
+}
+
+button.game--start {
+    margin-right: 15px;
+}
+
+
+</style>
+
+
+</head>
+
+<body>
+  <div class="container">
+    <nav class="navbar">
+      <div class="container">
+        <ul class="navbar-list">
+          <li class="navbar-item"><a class="navbar-link" href="/">Home</a></li>
+          <li class="navbar-item"><a class="navbar-link" href="https://labs.javierviola.com">Labs</a></li>
+          <li class="navbar-item">
+            <a class="navbar-link" href="https://github.com/pepoviola/tide-sse-tweets" target="_blank">GH Repo</a>
+          </li>
+
+        </ul>
+      </div>
+    </nav>
+    <div class="container" id="main">
+      <section class="hero">
+        <h1 class="title"><span class="tide">Tide</span> ws tweets by room</h1>
+        <pre class="explain">Tide-ws-rooms is an example project for exploring how to use ws <i>rooms</i> with the <a href="https://github.com/http-rs/tide" target="_blank">Tide</a> framework by stream tweets related to different topics by <i>room</i>.</pre>
+        <!-- You can about the implementation in this <a href="https://javierviola.com/tags/tide-basic-crud/" target="_blank">post</a>.</pre> -->
+      </section>
+    <section style="text-align:center">
+      <div class="hint">You can select the room and see the tweets in real-time.</div>
+      <a class="button current" data-room="nba">NBA Room</a>
+      <a class="button" data-room="rust">Rust Room</a>
+      <a class="button" data-room="premier">Premier League Room</a>
+    </section>
+    <section>
+      <div class="window browser">
+        <div class="browser-header">
+          <span class="bullet bullet-red"></span>
+          <span class="bullet bullet-yellow"></span>
+          <span class="bullet bullet-green"></span>
+          <span class="title"><span class="scheme">https://</span>your-tide-app.com</span>
+        </div>
+        <div class="body">
+          <p id="room-label">
+
+          </p>
+          <ul class="tweets" id="tweets"></ul>
+        </div>
+      </div>
+    </section>
+    </div>
+  </div>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+ <script>
+let io;
+const rooms = {
+  nba : {
+    re : /(NBA|TrueToAtlanta|Celtics|BrooklynGrit|BuzzCity|BullsNation|DefendTheLand|MFFL|MileHighBasketball|DetroitBasketball|DubNation|Rockets50|GoPacers|ItTakesEverything|LakeShow|GrindCity|HEATIsOn|OwnTheFuture|PowerOfThePack|Pelicans|Knicks|ThunderUp|LetsGoMagic|MADEinPHILA|WeArePHX|RipCity|SacramentoProud|GoSpursGo|WeTheNorth|TakeNote|DCFamily)/i,
+    label : `Streaming tweets about <span class="tag">NBA</span> teams <a href="https://twitter.com/GMA/status/790569543693430784" target="_blank">hashtags</a>`
+  },
+  rust : {
+    re : /(rust_foundation|rust|httprs|tide|surf|async)/i,
+    label : `Streaming tweets about <span class="tag">Rust</span> <a href="https://twitter.com/rustlang" target="_blank">(@rustlang)</a> </span>, <span class="tag">http-rs</span> <a href="https://twitter.com/_httprs" target="_blank">(@_httprs)</a> and <span class="tag">Rust Foundation</span> <a href="https://twitter.com/rust_foundation" target="_blank">(@rust_foundation)</a>`
+  },
+  premier : {
+    re : /(Arsenal|afcbournemouth|BurnleyOffcial|ChelseaFC|CPFC|Everton|HullCity|LCFC|LFC|ManCity|ManUtd|Boro|SouthamptonFC|stokecity|SunderlandAFC|SwansOfficial|SpursOfficial|WatfordFC|WBA|WestHamUtd)/i,
+    label: `Streaming tweets of the <span class="tag">Premier League</span> teams`
+  }
+};
+
+current_room = 'nba';
+
+function isOpen() { return io && io.readyState === io.OPEN };
+function ioConn() {
+    let url = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws`;
+    if( ! isOpen() ) io = new WebSocket( url );
+}
+async function ioSend( msg ) {
+    if( ! isOpen() ) {
+        ioConn();
+        await new Promise(r => setTimeout(r, 500)); // wait half second to connect
+    }
+    io.send( msg );
+}
+
+
+document.addEventListener("DOMContentLoaded", function() {
+    ioConn();
+
+    $('#room-label').html( rooms[current_room].label );
+
+    io.addEventListener('message', message => {
+        console.log('Message from server', message.data);
+        const data = JSON.parse(message.data);
+        add(data).prependTo('#tweets').addClass('new');
+    });
+});
+
+function slice(){
+  $('#tweets > li').slice(100).remove();
+}
+
+function add(data){
+  var text = $('<span class="tweet">').text(data.text);
+  var str = text.text().replace( rooms[ current_room ].re, '<span class="tag">$1</span>');
+  text.html(str);
+  var t = $('<li>');
+  t.append($('<img>').attr('src', data.user.profile_image_url_https));
+  t.append(text);
+  t.append($('<a class="time">')
+    .attr('href', 'https://twitter.com/' + data.user.screen_name + '/status/' + data.id_str)
+    .attr('target', '_blank')
+    .data('time', data.timestamp_ms)
+    .text(pretty(data.timestamp_ms) || 'now')
+  );
+  return t;
+}
+
+setInterval(function(){
+  $('.time').each(function(){
+    $(this).text(pretty($(this).data('time')));
+  });
+}, 10 * 1000);
+
+// from ejohn.org/blog/javascript-pretty-date/
+function pretty(timestamp){
+  var date = new Date(parseInt(timestamp, 10)),
+  diff = (((new Date()).getTime() - date.getTime()) / 1000),
+  day_diff = Math.floor(diff / 86400);
+  if ( isNaN(day_diff) || day_diff < 0 || day_diff >= 31 ) return;
+  return day_diff == 0 && (
+    diff < 60 && "now" ||
+    diff < 120 && "1m" ||
+    diff < 3600 && Math.floor( diff / 60 ) + "m" ||
+    diff < 7200 && "1h" ||
+    diff < 86400 && Math.floor( diff / 3600 ) + "h") ||
+  day_diff == 1 && "1d" ||
+  day_diff < 7 && day_diff + "d" ||
+  day_diff < 31 && Math.ceil( day_diff / 7 ) + "w";
+}
+
+$('a.button').click( ev => {
+  const selectedRoom = $(ev.target).data('room');
+  if( selectedRoom === current_room ) return;
+
+  changeToRoom( selectedRoom );
+});
+
+async function changeToRoom( room ) {
+  await ioSend( room );
+  current_room = room;
+  $('#room-label').html( rooms[current_room].label );
+  $('#tweets > li').remove();
+}
+</script>
+</body>
+</html>

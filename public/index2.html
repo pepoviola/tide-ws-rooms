@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Tide tweets stream</title>
+  <meta charset="utf-8">
+  <!-- Primary Meta Tags -->
+    <title>Tide tweets stream - a Server Send Events example with Tide</title>
+    <meta name="title" content="Tide tweets stream - a Server Send Events example with Tide">
+    <meta name="description" content="Tide tweets stream - a Server Send Events example in Rust using Tide ( @http_rs )">
+    <meta name="author" content="Javier Viola">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+
+
+    <link href='//fonts.googleapis.com/css?family=Raleway:400,300,600' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="/public/css/normalize.css">
+    <link rel="stylesheet" href="/public/css/skeleton.css">
+    <link rel="stylesheet" href="/public/css/custom.css">
+
+<style>
+html, body {
+    height: 100%;
+}
+
+div.container.wrapper {
+    display: table;
+    height: 100%;
+    width: 100%;
+}
+
+#footer {
+    /* Placeholder footer styles */
+    text-align: center;
+}
+
+div.container {
+    max-width: inherit;
+}
+section {
+    padding-top: 30px;
+}
+
+span.tide {
+color: #444;
+    padding: 5px;
+    font-size: 4.7rem;
+    border: 1px solid #DEA584;
+    border-radius: 5px;
+    background-color: #DEA584;
+    box-shadow: 0 0 5px rgba(0,0,0,.1), 0 3px 6px rgba(0,0,0,.05);
+}
+
+span.inspired {
+    font-size: 1.5rem;
+}
+
+pre.explain {
+    white-space: pre-wrap;
+    font-size: 1.7rem;
+    padding: 15px 0;
+}
+
+code.explain {
+    white-space: pre-wrap;
+}
+
+div.help {
+    color: #444;
+    padding: 20px;
+    margin-bottom: 20px;
+    font-size: 2rem;
+    border: 1px solid #DEA584;
+    border-radius: 5px;
+    background-color: #DEA584;
+    box-shadow: 0 0 5px rgba(0,0,0,.1), 0 3px 6px rgba(0,0,0,.05);
+}
+
+div.buttons {
+    margin-top: 50px;
+}
+
+button.game--start {
+    margin-right: 15px;
+}
+
+
+</style>
+
+
+</head>
+
+<body>
+  <div class="container">
+    <nav class="navbar">
+      <div class="container">
+        <ul class="navbar-list">
+          <li class="navbar-item"><a class="navbar-link" href="/">Home</a></li>
+          <li class="navbar-item"><a class="navbar-link" href="https://labs.javierviola.com">Labs</a></li>
+          <li class="navbar-item">
+            <a class="navbar-link" href="https://github.com/pepoviola/tic-tac-tide" target="_blank">GH Repo</a>
+          </li>
+
+        </ul>
+      </div>
+    </nav>
+    <div class="container" id="main">
+    <section>
+        <form autocomplete="off" action="/track" method="post">
+        <div class="row">
+            <div class="ten columns">
+            <label for="name">Topic to stream</label>
+            <input class="u-full-width" name="topics[]" type="text" placeholder="tide">
+            </div>
+        </div>
+        <div class="row">
+            <div class="ten columns">
+            <label for="name">Topic to stream</label>
+            <input class="u-full-width" name="topics[]" type="text" placeholder="surf">
+            </div>
+        </div>
+        <input class="button-primary submit" type="submit" value="Submit"/>
+        </form>
+    </section>
+    </div>
+  </div>
+</body>
+
+</html>
