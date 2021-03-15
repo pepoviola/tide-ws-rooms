@@ -7,8 +7,6 @@ use regex::Regex;
 use serde::de;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::HashMap;
-use tide::http::format_err;
-use tide::Request;
 use tide_websockets::{Message as WSMessage, WebSocket};
 use twitter_stream::Token;
 
@@ -19,7 +17,7 @@ pub struct RequestBody {
 
 #[derive(Clone, Debug)]
 struct State {
-    broadcaster: BroadcastChannel<Tweet>,
+    broadcaster: BroadcastChannel<RoomMessage>,
     rooms: HashMap<String, Room>,
 }
 
@@ -48,8 +46,7 @@ struct User {
 
 #[derive(Clone, Debug)]
 struct Room {
-    id: u8,
-    label: String,
+    id: String,
     topics: Vec<String>,
     regex: Regex,
 }
@@ -60,7 +57,17 @@ impl Room {
     }
 }
 
-async fn spawn_tracker(broadcaster: BroadcastChannel<Tweet>, topics: String) {
+#[derive(Clone, Debug)]
+struct RoomMessage {
+    room_id: String,
+    tweet: Tweet,
+}
+
+async fn spawn_tracker(
+    broadcaster: BroadcastChannel<RoomMessage>,
+    rooms: HashMap<String, Room>,
+    topics: String,
+) {
     println!("topics : {}", topics);
     let token = Token::from_parts(
         std::env::var("TW_CONSUMER_KEY").expect("missing env var TW_CONSUMER_KEY"),
@@ -76,12 +83,20 @@ async fn spawn_tracker(broadcaster: BroadcastChannel<Tweet>, topics: String) {
         while let Some(json) = stream.next().await {
             if let Ok(StreamMessage::Tweet(tw)) = serde_json::from_str(&json.unwrap()) {
                 //println!("receive a  tweet! ... , {}", tw.text);
-                match broadcaster.send(&tw).await {
-                    Ok(_) => {}
-                    Err(_) => {
-                        println!("Error sending to broadcaster")
+                for (key, room) in &rooms {
+                    if room.should_send(&tw.text) {
+                        let msg = RoomMessage {
+                            room_id: key.to_string(),
+                            tweet: tw.clone(),
+                        };
+                        match broadcaster.send(&msg).await {
+                            Ok(_) => {}
+                            Err(_) => {
+                                println!("Error sending to broadcaster")
+                            }
+                        };
                     }
-                };
+                }
             }
         }
     });
@@ -98,6 +113,7 @@ fn get_regex(input_str: &str) -> String {
     let topics: Vec<String> = temp_vec.iter().map(|s| format!(r"(\b{}\b)", s)).collect();
     topics.join("|")
 }
+
 #[async_std::main]
 async fn main() -> Result<(), std::io::Error> {
     dotenv::dotenv().ok();
@@ -111,24 +127,21 @@ async fn main() -> Result<(), std::io::Error> {
     let premier_input = include_str!("../public/premier.txt");
 
     let nba_room = Room {
-        id: 1, // let use numbers for now
-        label: String::from("NBA hashtags"),
+        id: "nba".to_string(),
         topics: get_topics(nba_input),
         regex: Regex::new(&get_regex(nba_input)).unwrap(),
     };
     let nba_topics_str = nba_room.topics.join(",");
 
     let rust_room = Room {
-        id: 2, // let use numbers for now
-        label: String::from("Rust, async-std, http-rs and all that jazz"),
+        id: "rust".to_string(),
         topics: get_topics(rust_input),
         regex: Regex::new(&get_regex(rust_input)).unwrap(),
     };
     let rust_topics_str = rust_room.topics.join(",");
 
     let premier_room = Room {
-        id: 3, // let use numbers for now
-        label: String::from("Premier League teams"),
+        id: "premier".to_string(),
         topics: get_topics(premier_input),
         regex: Regex::new(&get_regex(premier_input)).unwrap(),
     };
@@ -143,10 +156,9 @@ async fn main() -> Result<(), std::io::Error> {
         "{},{},{}",
         nba_topics_str, rust_topics_str, premier_topics_str
     );
-    spawn_tracker(broadcaster.clone(), topics_str).await;
+    spawn_tracker(broadcaster.clone(), rooms.clone(), topics_str).await;
 
     let mut app = tide::with_state(State { broadcaster, rooms });
-
     // serve public dir for assets
     app.at("/public").serve_dir("./public/")?;
 
@@ -154,14 +166,14 @@ async fn main() -> Result<(), std::io::Error> {
     app.at("/").serve_file("public/index.html")?;
 
     // ws route
-    app.at("/ws")
-        .get(WebSocket::new(|req: Request<State>, wsc| async move {
+    app.at("/ws").get(WebSocket::new(
+        |req: tide::Request<State>, wsc| async move {
             let state = req.state().clone();
             let rooms = state.rooms;
             let broadcaster = state.broadcaster.clone();
             let mut combined_stream = futures_util::stream::select(
-                wsc.clone().map(|l| Either::Left(l)),
-                broadcaster.clone().map(|r| Either::Right(r)),
+                wsc.clone().map(Either::Left),
+                broadcaster.clone().map(Either::Right),
             );
 
             // by default we put new connections in the nba room
@@ -174,29 +186,21 @@ async fn main() -> Result<(), std::io::Error> {
                         current_room = rooms.get(&message);
                     }
 
-                    Either::Right(tweet) => {
+                    Either::Right(room_message) => {
                         if let Some(room) = current_room {
-                            if room.should_send(&tweet.text) {
-                                wsc.send_json(&tweet).await?;
+                            if room.id == room_message.room_id {
+                                wsc.send_json(&room_message.tweet).await?;
                             }
                         }
-                        // match current_room {
-                        //     Some(room) => {
-                        //         if room.should_send(&tweet.text) {
-                        //             wsc.send_json(&tweet).await?;
-                        //         }
-                        //     }
-                        //     None => {} // noop
-                        // }
                     }
                     _o => {
-                        return Err(format_err!("no idea"));
+                        return Err(tide::http::format_err!("no idea"));
                     }
                 }
             }
-
             Ok(())
-        }));
+        },
+    ));
 
     let port = std::env::var("PORT").unwrap_or_else(|_| "8080".to_string());
     let addr = format!("0.0.0.0:{}", port);
