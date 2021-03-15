@@ -1,5 +1,5 @@
 [package]
-name = "tide-ws-rooms-blog"
+name = "tide-ws-rooms"
 version = "0.1.0"
 authors = ["Javier Viola <pepoviola@gmail.com>"]
 edition = "2018"
