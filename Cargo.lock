@@ -2056,7 +2056,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "tide-ws-rooms-blog"
+name = "tide-ws-rooms"
 version = "0.1.0"
 dependencies = [
  "async-std",
