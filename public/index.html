@@ -128,6 +128,7 @@ button.game--start {
       <a class="button current" data-room="nba">NBA Room</a>
       <a class="button" data-room="rust">Rust Room</a>
       <a class="button" data-room="premier">Premier League Room</a>
+      <a class="button" data-room="rustdc">RustDC</a>
     </section>
     <section>
       <div class="window browser">
@@ -160,6 +161,10 @@ const rooms = {
   rust : {
     re : /(rust_foundation|rust|httprs|tide|surf|async)/i,
     label : `Streaming tweets about <span class="tag">Rust</span> <a href="https://twitter.com/rustlang" target="_blank">(@rustlang)</a> </span>, <span class="tag">http-rs</span> <a href="https://twitter.com/_httprs" target="_blank">(@_httprs)</a> and <span class="tag">Rust Foundation</span> <a href="https://twitter.com/rust_foundation" target="_blank">(@rust_foundation)</a>`
+  },
+  rustdc : {
+    re : /(rustdc|rustDC|dc_rust)/i,
+    label : `Streaming tweets about <span class="tag">RustDC</span> <a href="https://twitter.com/dc_rust" target="_blank">(@dc_rust)</a> </span>`
   },
   premier : {
     re : /(Arsenal|afcbournemouth|BurnleyOffcial|ChelseaFC|CPFC|Everton|HullCity|LCFC|LFC|ManCity|ManUtd|Boro|SouthamptonFC|stokecity|SunderlandAFC|SwansOfficial|SpursOfficial|WatfordFC|WBA|WestHamUtd)/i,

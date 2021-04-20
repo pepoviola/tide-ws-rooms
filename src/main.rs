@@ -124,6 +124,7 @@ async fn main() -> Result<(), std::io::Error> {
 
     let nba_input = include_str!("../public/nba.txt");
     let rust_input = include_str!("../public/rust.txt");
+    let rustdc_input = include_str!("../public/rustdc.txt");
     let premier_input = include_str!("../public/premier.txt");
 
     let nba_room = Room {
@@ -140,6 +141,13 @@ async fn main() -> Result<(), std::io::Error> {
     };
     let rust_topics_str = rust_room.topics.join(",");
 
+    let rustdc_room = Room {
+        id: "rustdc".to_string(),
+        topics: get_topics(rustdc_input),
+        regex: Regex::new(&get_regex(rustdc_input)).unwrap(),
+    };
+    let rustdc_topics_str = rustdc_room.topics.join(",");
+
     let premier_room = Room {
         id: "premier".to_string(),
         topics: get_topics(premier_input),
@@ -149,12 +157,13 @@ async fn main() -> Result<(), std::io::Error> {
     let mut rooms: HashMap<String, Room> = HashMap::new();
     rooms.insert("nba".to_string(), nba_room);
     rooms.insert("rust".to_string(), rust_room);
+    rooms.insert("rustdc".to_string(), rustdc_room);
     rooms.insert("premier".to_string(), premier_room);
 
     // spawn tracker
     let topics_str = format!(
-        "{},{},{}",
-        nba_topics_str, rust_topics_str, premier_topics_str
+        "{},{},{},{}",
+        nba_topics_str, rust_topics_str, premier_topics_str, rust_topics_str
     );
     spawn_tracker(broadcaster.clone(), rooms.clone(), topics_str).await;
 
